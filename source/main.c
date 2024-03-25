@@ -1,118 +1,81 @@
-/*
- * The Clear BSD License
- * Copyright (c) 2015, Freescale Semiconductor, Inc.
- * Copyright 2016-2017 NXP
+/* Copyright 2018, DSI FCEIA UNR - Sistemas Digitales 2
+ *    DSI: http://www.dsi.fceia.unr.edu.ar/
+ * Copyright 2018, Gustavo Muro
  * All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted (subject to the limitations in the disclaimer below) provided
- *  that the following conditions are met:
  *
- * o Redistributions of source code must retain the above copyright notice, this list
- *   of conditions and the following disclaimer.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- * o Redistributions in binary form must reproduce the above copyright notice, this
- *   list of conditions and the following disclaimer in the documentation and/or
- *   other materials provided with the distribution.
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
  *
- * o Neither the name of the copyright holder nor the names of its
- *   contributors may be used to endorse or promote products derived from this
- *   software without specific prior written permission.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
  *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS LICENSE.
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#include "fsl_debug_console.h"
+/*==================[inclusions]=============================================*/
+
+#include "SD2_board.h"
 #include "board.h"
-#include "fsl_pit.h"
+#include "key.h"
+#include "time.h"
+#include "fsl_debug_console.h"
 
-#include "pin_mux.h"
-#include "clock_config.h"
-/*******************************************************************************
- * Definitions
- ******************************************************************************/
-#define PIT_LED_HANDLER PIT_IRQHandler
-#define PIT_IRQ_ID PIT_IRQn
-/* Get source clock for PIT driver */
-#define PIT_SOURCE_CLOCK CLOCK_GetFreq(kCLOCK_BusClk)
-#define LED_INIT() LED_RED_INIT(LOGIC_LED_ON)
-#define LED_TOGGLE() LED_RED_TOGGLE()
+/*==================[macros and definitions]=================================*/
 
-/*******************************************************************************
- * Prototypes
- ******************************************************************************/
+/*==================[internal data declaration]==============================*/
 
-/*******************************************************************************
- * Variables
- ******************************************************************************/
+/*==================[internal functions declaration]=========================*/
 
-volatile bool pitIsrFlag = false;
+/*==================[internal functions definition]==========================*/
 
-/*******************************************************************************
- * Code
- ******************************************************************************/
-void PIT_LED_HANDLER(void)
-{
-    /* Clear interrupt flag.*/
-    PIT_ClearStatusFlags(PIT, kPIT_Chnl_0, kPIT_TimerFlag);
-    pitIsrFlag = true;
+int main(void) {
+
+	board_init();
+	BOARD_InitDebugConsole();
+	key_init();
+	time_init();
+
+	/* systick cada 1 ms */
+	SysTick_Config(SystemCoreClock / 1000U);
+
+	int i;
+	uint32_t transcurrido;
+
+	while (1)
+	{
+		//Resetear el módulo
+		time_restart();
+
+		//procedimiento a medir
+		for (i = 0; i < 100000; ++i) {;}
+
+		//Obtiene el tiempo transcurrido desde el último reseteo
+		transcurrido = time_elapsed();
+
+		PRINTF("Tiempo transcurrido: %d", transcurrido);
+	}
 }
 
-/*!
- * @brief Main function
- */
-int main(void)
+void SysTick_Handler(void)
 {
-    /* Structure of initialize PIT */
-    pit_config_t pitConfig;
-
-    /* Board pin, clock, debug console init */
-    BOARD_InitPins();
-    BOARD_BootClockRUN();
-    BOARD_InitDebugConsole();
-
-    /* Initialize and enable LED */
-    LED_INIT();
-
-    /*
-     * pitConfig.enableRunInDebug = false;
-     */
-    PIT_GetDefaultConfig(&pitConfig);
-
-    /* Init pit module */
-    PIT_Init(PIT, &pitConfig);
-
-    /* Set timer period for channel 0 */
-    PIT_SetTimerPeriod(PIT, kPIT_Chnl_0, USEC_TO_COUNT(1000000U, PIT_SOURCE_CLOCK));
-
-    /* Enable timer interrupts for channel 0 */
-    PIT_EnableInterrupts(PIT, kPIT_Chnl_0, kPIT_TimerInterruptEnable);
-
-    /* Enable at the NVIC */
-    EnableIRQ(PIT_IRQ_ID);
-
-    /* Start channel 0 */
-    PRINTF("\r\nStarting channel No.0 ...");
-    PIT_StartTimer(PIT, kPIT_Chnl_0);
-
-    while (true)
-    {
-        /* Check whether occur interupt and toggle LED */
-        if (true == pitIsrFlag)
-        {
-            PRINTF("\r\n Channel No.0 interrupt is occured !");
-            LED_TOGGLE();
-            pitIsrFlag = false;
-        }
-    }
+	key_periodicTask1ms();
 }
