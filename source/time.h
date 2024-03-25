@@ -59,7 +59,7 @@ void time_init(void);
 void time_restart(void);
 // Devuelve la cantidad de [tiempo] transcurrido desde el último restart o el último overflow
 uint32_t time_elapsed(void);
-// true cuando se tuvo que reiniciar la variable interna por llegar al máximo posible
+// Devuelve <true> cuando se tuvo que reiniciar la variable interna por llegar al máximo posible
 // La llamada a la función resetea la bandera interna
 bool time_overflow(void);
 
