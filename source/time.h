@@ -35,6 +35,11 @@
 #define TIME_H_
 
 /*==================[inclusions]=============================================*/
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+
 /*==================[cplusplus]==============================================*/
 #ifdef __cplusplus
 extern "C" {
