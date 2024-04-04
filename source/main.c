@@ -49,6 +49,7 @@
 
 int main(void) {
 
+	BOARD_BootClockRUN();
 	board_init();
 	BOARD_InitDebugConsole();
 	key_init();
@@ -58,7 +59,7 @@ int main(void) {
 	SysTick_Config(SystemCoreClock / 1000U);
 
 	int i;
-	uint32_t transcurrido;
+	uint64_t transcurrido;
 
 	while (1)
 	{
@@ -69,7 +70,7 @@ int main(void) {
 		for (i = 0; i < 100000; ++i) {;}
 
 		//Obtiene el tiempo transcurrido desde el último reseteo
-		transcurrido = time_elapsed();
+		transcurrido = time_elapsed_us();
 
 		PRINTF("Tiempo transcurrido: %d", transcurrido);
 	}

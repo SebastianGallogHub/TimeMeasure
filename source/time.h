@@ -52,13 +52,13 @@ extern "C" {
 /*==================[external data declaration]==============================*/
 
 /*==================[external functions definition]==========================*/
-// Inicializa el módulo
-void time_init(void);
+// Inicializa el módulo con la resolución indicada
+void time_init();
 // Resetea la variable de control interna y comienza a contar
 // La llamada resetea la bandera de overflow
 void time_restart(void);
-// Devuelve la cantidad de [tiempo] transcurrido desde el último restart o el último overflow
-uint32_t time_elapsed(void);
+// Devuelve la cantidad de tiempo en us transcurrido desde el último restart
+uint64_t time_elapsed_us(void);
 // Devuelve <true> cuando se tuvo que reiniciar la variable interna por llegar al máximo posible
 // La llamada a la función resetea la bandera interna
 bool time_overflow(void);

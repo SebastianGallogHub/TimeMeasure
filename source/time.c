@@ -41,11 +41,12 @@
 #define PIT_IRQ_ID 			PIT_IRQn
 /* Get source clock for PIT driver */
 #define PIT_SOURCE_CLOCK 	CLOCK_GetFreq(kCLOCK_BusClk)
+#define PIT_CHNL			kPIT_Chnl_0
+
 
 
 /*==================[internal data declaration]==============================*/
 
-static uint32_t pit_tick = 0;
 static bool overflowFlag = false;
 
 /*==================[internal functions declaration]=========================*/
@@ -59,18 +60,14 @@ static bool overflowFlag = false;
 void PIT_IRQHandler(void)
 {
     /* Clear interrupt flag.*/
-    PIT_ClearStatusFlags(PIT, kPIT_Chnl_0, kPIT_TimerFlag);
-    pit_tick ++;
-    if(pit_tick >= UINT32_MAX)
-    {
-    	pit_tick = 0;
-    	overflowFlag = true;
-    }
+    PIT_ClearStatusFlags(PIT, PIT_CHNL, kPIT_TimerFlag);
+
+	overflowFlag = true;
 }
 
 /*==================[external functions definition]==========================*/
 
-void time_init(void)
+void time_init()
 {
 	/* Structure of initialize PIT */
 	pit_config_t pitConfig;
@@ -86,33 +83,40 @@ void time_init(void)
 	PIT_Init(PIT, &pitConfig);
 
 	/* Set timer period for channel 0 */
-	PIT_SetTimerPeriod(PIT, kPIT_Chnl_0, USEC_TO_COUNT(1U, PIT_SOURCE_CLOCK));
+	PIT_SetTimerPeriod(PIT, PIT_CHNL, UINT32_MAX);//USEC_TO_COUNT(UINT32_MAX, PIT_SOURCE_CLOCK));
 
 	/* Enable timer interrupts for channel 0 */
-	PIT_EnableInterrupts(PIT, kPIT_Chnl_0, kPIT_TimerInterruptEnable);
+	PIT_EnableInterrupts(PIT, PIT_CHNL, kPIT_TimerInterruptEnable);
 
 	/* Enable at the NVIC */
 	EnableIRQ(PIT_IRQ_ID);
 
 	/* Start channel 0 */
-	PIT_StartTimer(PIT, kPIT_Chnl_0);
+	PIT_StartTimer(PIT, PIT_CHNL);
 }
 
 void time_restart(void)
 {
-	PIT_StopTimer(PIT, kPIT_Chnl_0);
-//	PIT_DisableInterrupts(PIT, kPIT_Chnl_0, kPIT_TimerInterruptEnable);
+	PIT_StopTimer(PIT, PIT_CHNL);
 
-	pit_tick = 0;
 	overflowFlag = false;
 
-	PIT_StartTimer(PIT, kPIT_Chnl_0);
-//	PIT_EnableInterrupts(PIT, kPIT_Chnl_0, kPIT_TimerInterruptEnable);
+	PIT_SetTimerPeriod(PIT, PIT_CHNL, UINT32_MAX);
+	PIT_StartTimer(PIT, PIT_CHNL);
 }
 
-uint32_t time_elapsed(void)
+uint64_t time_elapsed_us(void)
 {
-	return pit_tick;
+	if(overflowFlag)
+		return UINT32_MAX;
+
+	uint32_t currentCount;
+	uint32_t elapsed;
+
+	currentCount = PIT_GetCurrentTimerCount(PIT, PIT_CHNL);
+	elapsed = UINT32_MAX - currentCount;
+
+	return COUNT_TO_USEC(elapsed, PIT_SOURCE_CLOCK);
 }
 
 bool time_overflow(void)
