@@ -105,19 +105,26 @@ void time_restart(void)
 	PIT_StartTimer(PIT, PIT_CHNL);
 }
 
-uint64_t time_elapsed_us(void)
+uint64_t time_elapsed_us(void) //Tiene ~0.03ms de error por defecto
 {
 	if(overflowFlag)
 		return UINT32_MAX;
 
-	uint32_t currentCount;
-	uint32_t elapsed;
-
-	currentCount = PIT_GetCurrentTimerCount(PIT, PIT_CHNL);
-	elapsed = UINT32_MAX - currentCount;
-
-	return COUNT_TO_USEC(elapsed, PIT_SOURCE_CLOCK);
+	return COUNT_TO_USEC((UINT32_MAX - PIT_GetCurrentTimerCount(PIT, PIT_CHNL)), PIT_SOURCE_CLOCK);
 }
+
+/*
+ * PRUEBA
+ * ---------------------------------------------------------------------
+ * Frecuencia de Systick 							| 20971520 		 Hz
+ * ---------------------------------------------------------------------
+ * Período de Systick 								|  	   999.92752 us
+ * ---------------------------------------------------------------------
+ * Para descontar desde 100U se toma (idealmente) 	|	 99992.7 	 us
+ * Temporizado real (con el sistema actual)			|	 99965.0 	 us
+ *----------------------------------------------------------------------
+ *											  ERROR	|		27.0   	 us (~ 0.03ms) por defecto
+ * */
 
 bool time_overflow(void)
 {

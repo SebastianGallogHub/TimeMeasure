@@ -47,6 +47,8 @@
 
 /*==================[internal functions definition]==========================*/
 
+uint32_t ms_100 = 100;
+
 int main(void) {
 
 	BOARD_BootClockRUN();
@@ -56,27 +58,31 @@ int main(void) {
 	time_init();
 
 	/* systick cada 1 ms */
-	SysTick_Config(SystemCoreClock / 1000U);
+	SysTick_Config((SystemCoreClock / 1000U));
 
-	int i;
-	uint64_t transcurrido;
+	uint32_t transcurrido;
+	//Resetear el módulo
+	time_restart();
 
 	while (1)
 	{
-		//Resetear el módulo
-		time_restart();
+		//Mido 100ms para verificar el funcionamiento
+		if(ms_100 == 0)
+		{
+			//Obtiene el tiempo transcurrido desde el último reseteo
+			transcurrido = time_elapsed_us();
 
-		//procedimiento a medir
-		for (i = 0; i < 100000; ++i) {;}
-
-		//Obtiene el tiempo transcurrido desde el último reseteo
-		transcurrido = time_elapsed_us();
-
-		PRINTF("Tiempo transcurrido: %d", transcurrido);
+			//Vuelvo a medir para verificar repetibilidad
+			ms_100 = 100;
+			time_restart();
+		}
 	}
 }
 
 void SysTick_Handler(void)
 {
 	key_periodicTask1ms();
+
+	if(ms_100)
+		ms_100 --;
 }
